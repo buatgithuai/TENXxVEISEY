@@ -135,12 +135,12 @@ $("#app").innerHTML=`<div class="lw"><i class="bl b1"></i><i class="bl b2"></i><
 setTimeout(()=>$(em?"#pw":"#em")?.focus(),50)};
 document.addEventListener("pointermove",e=>{const w=$(".lw");if(w){w.style.setProperty("--x",((e.clientX/innerWidth)-.5)*50+"px");w.style.setProperty("--y",((e.clientY/innerHeight)-.5)*50+"px")}});
 async function ensure(u,name){
- const ur=doc(db,"users",u.uid),s=await getDoc(ur);if(s.exists())return s.data();
- const first=!(await getDoc(doc(db,"meta","setup"))).exists();let role="pending",party="";
+ const ur=doc(db,"users",u.uid);window.__st="1 baca users/uid";const s=await getDoc(ur);if(s.exists())return s.data();
+ window.__st="2 baca meta/setup";const first=!(await getDoc(doc(db,"meta","setup"))).exists();let role="pending",party="";
  if(first){party=(prompt("SETUP AWAL: Anda pemilik pertama. Ketik TENX atau VEISEY")||"").toUpperCase();
   if(!["TENX","VEISEY"].includes(party))throw Error("Pilih TENX atau VEISEY");role="owner_"+party.toLowerCase()}
  const p={name:name||u.email,email:u.email,role,party,active:role!="pending",created:serverTimestamp()};
- await setDoc(ur,p);
+ window.__st="3 tulis users/uid";await setDoc(ur,p);window.__st="4 seed data (batch)";
  if(first){const b=writeBatch(db);
   b.set(doc(db,"meta","setup"),{done:true,by:u.uid,at:serverTimestamp()});
   b.set(doc(db,"meta","counter"),{inv:0});
@@ -174,11 +174,11 @@ document.addEventListener("input",e=>{if(!$(".login"))return;const er=$("#er");i
  if(e.target.id=="pw"&&lm=="up"){const v=e.target.value,sc=Math.min(4,(v.length>=6)+(v.length>=10)+(/[A-Z]/.test(v)&&/[a-z]/.test(v))+(/\d/.test(v)||/[^\w\s]/.test(v))),b=$("#sg i"),L=["Terlalu pendek","Lemah","Cukup","Bagus","Kuat"];
   b.style.width=(v?Math.max(1,sc)*25:0)+"%";b.style.background=sc<2?"var(--bad)":sc<3?"var(--wa)":"var(--ac)";$("#sg span").textContent=v?L[v.length<6?0:sc]:"Kekuatan kata sandi"}});
 onAuthStateChanged(au,async u=>{
- if(!u){me=null;return loginUI()}
+ if(!u){me=null;const m=window.__lastErr||"";window.__lastErr="";return loginUI(m)}
  try{const p=await ensure(u,u.displayName);me={uid:u.uid,...p};
   if(!me.active)return $("#app").innerHTML=`<div class="login"><h3>Menunggu aktivasi</h3><p>Minta pemilik memberi peran pada akun ${esc(u.email)}.</p><button class="b" onclick="A.out()">Keluar</button></div>`;
-  ST=(await L("settings_versions")).sort((a,b)=>b.ver-a.ver)[0]||{fee:600,split:50};shell();go("dash")}
- catch(x){loginUI(x.message);signOut(au)}});
+  window.__st="5 baca settings_versions";ST=(await L("settings_versions")).sort((a,b)=>b.ver-a.ver)[0]||{fee:600,split:50};window.__st="6 muat dasbor";shell();go("dash")}
+ catch(x){console.error("ENSURE/LOGIN ERROR:",x);window.__lastErr="[Langkah "+(window.__st||"?")+"] "+(x.code?x.code+": ":"")+x.message;signOut(au)}});
 
 // ===== UI =====
 const NAV=[["dash","Dasbor","🏠"],["inv","Nota","🧾"],["spk","SPK","🛠️"],["stk","Stok & BOM","📦"],["buy","Pembelian","🛒"],["exp","Biaya","💸"],["rep","Laporan & Profit","📊"],["usr","Pengguna","👥"],["log","Audit log","📜"],["set","Pengaturan","⚙️"]];
@@ -374,7 +374,7 @@ addEventListener("online",()=>{const o=$("#off");if(o)o.hidden=true});addEventLi
 try{const l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(new Blob([JSON.stringify({name:"TENX × VEISEY",short_name:"TenX×Veisey",display:"standalone",start_url:location.href.split("#")[0],background_color:"#0f766e",theme_color:"#0f766e"})],{type:"application/manifest+json"}));document.head.append(l)}catch(e){}
 
 const RULES=`rules_version='2';
-service cloud.firestore{match /databases/{d}/documents{
+service cloud.firestore{match /databases/{database}/documents{
  function U(){return get(/databases/$(database)/documents/users/$(request.auth.uid)).data}
  function ok(){return request.auth!=null&&exists(/databases/$(database)/documents/users/$(request.auth.uid))&&U().active==true}
  function ow(){return ok()&&U().role in ['owner_tenx','owner_veisey']}
